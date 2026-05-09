@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">GPS Tracker</string>
+    <string name="notification_channel_name">Grabación de ruta</string>
+    <string name="notification_channel_description">Notificación persistente mientras se graba una ruta GPS</string>
+    <string name="notification_title">Grabando ruta</string>
+    <string name="notification_text">Ubicación en seguimiento</string>
+</resources>
