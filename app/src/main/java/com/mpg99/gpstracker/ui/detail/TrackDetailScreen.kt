@@ -15,21 +15,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
 import androidx.core.content.ContextCompat
 import com.mpg99.gpstracker.R
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -62,6 +68,7 @@ fun TrackDetailScreen(
     val track = state.track
     val points = state.points
     val lineColor = MaterialTheme.colorScheme.primary.toArgb()
+    var showRenameDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -73,6 +80,12 @@ fun TrackDetailScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = { showRenameDialog = true },
+                        enabled = track != null
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Renombrar")
+                    }
                     IconButton(onClick = {
                         scope.launch {
                             val file = vm.exportToGpx() ?: return@launch
@@ -93,17 +106,34 @@ fun TrackDetailScreen(
         ) {
             if (track != null) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Inicio: ${formatDateTime(track.startTime)}")
-                    track.endTime?.let { Text("Fin: ${formatDateTime(it)}") }
+                    Text(
+                        "Inicio: ${formatDateTime(track.startTime)}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    track.endTime?.let {
+                        Text(
+                            "Fin: ${formatDateTime(it)}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                     val durationMs = (track.endTime ?: System.currentTimeMillis()) - track.startTime
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("Duración: ${formatDuration(durationMs)}")
-                        Text("Distancia: ${formatDistance(state.distanceMeters)}")
-                        Text("${points.size} puntos")
+                        Text(
+                            "Duración: ${formatDuration(durationMs)}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            "Distancia: ${formatDistance(state.distanceMeters)}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
+                    Text(
+                        "${points.size} puntos",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
             }
 
@@ -147,6 +177,17 @@ fun TrackDetailScreen(
                 }
                 mapView.invalidate()
                 onDispose { }
+            }
+
+            if (showRenameDialog && track != null) {
+                RenameTrackDialog(
+                    currentName = track.name,
+                    onDismiss = { showRenameDialog = false },
+                    onConfirm = { newName ->
+                        vm.renameTrack(newName)
+                        showRenameDialog = false
+                    }
+                )
             }
 
             Box(
@@ -197,6 +238,36 @@ fun TrackDetailScreen(
             }
         }
     }
+}
+
+@Composable
+private fun RenameTrackDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(currentName) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Renombrar ruta") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                singleLine = true,
+                label = { Text("Nombre") }
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(text) },
+                enabled = text.trim().isNotEmpty() && text.trim() != currentName
+            ) { Text("Guardar") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        }
+    )
 }
 
 @Composable

@@ -22,9 +22,22 @@ class TrackRepository(private val dao: TrackDao) {
         dao.updateTrack(track.copy(endTime = endTime))
     }
 
+    suspend fun renameTrack(id: Long, name: String) {
+        dao.renameTrack(id, name.trim())
+    }
+
     suspend fun addPoint(point: TrackPoint) {
         dao.insertPoint(point)
     }
 
     suspend fun deleteTrack(id: Long) = dao.deleteTrack(id)
+
+    suspend fun importTrack(
+        name: String,
+        startTime: Long,
+        endTime: Long?,
+        points: List<TrackPoint>
+    ): Long = dao.insertTrackWithPoints(
+        Track(name = name, startTime = startTime, endTime = endTime)
+    ) { trackId -> points.map { it.copy(trackId = trackId) } }
 }

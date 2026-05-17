@@ -1,5 +1,7 @@
 package com.mpg99.gpstracker.ui.list
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,9 +24,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +55,25 @@ fun TrackListScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val list by vm.tracks.collectAsStateWithLifecycle(initialValue = emptyList())
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) vm.importFromGpx(uri)
+    }
+
+    LaunchedEffect(Unit) {
+        vm.importEvents.collect { event ->
+            val msg = when (event) {
+                is ImportResult.Success ->
+                    if (event.count == 1) "Ruta importada"
+                    else "${event.count} rutas importadas"
+                is ImportResult.Error -> event.message
+            }
+            snackbarHostState.showSnackbar(msg)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -57,9 +83,25 @@ fun TrackListScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        importLauncher.launch(
+                            arrayOf(
+                                "application/gpx+xml",
+                                "application/xml",
+                                "text/xml",
+                                "application/octet-stream",
+                                "*/*"
+                            )
+                        )
+                    }) {
+                        Icon(Icons.Default.FileUpload, contentDescription = "Importar GPX")
+                    }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         if (list.isEmpty()) {
             Box(

@@ -57,6 +57,17 @@ class TrackDetailViewModel(
         GpxExporter.writeGpx(getApplication(), track, points)
     }
 
+    fun renameTrack(newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            repo.renameTrack(trackId, trimmed)
+            _state.value = _state.value.copy(
+                track = _state.value.track?.copy(name = trimmed)
+            )
+        }
+    }
+
     private fun computeDistance(points: List<TrackPoint>): Double {
         if (points.size < 2) return 0.0
         var total = 0.0
