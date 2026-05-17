@@ -1,6 +1,8 @@
 package com.mpg99.gpstracker.ui
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,8 +20,20 @@ object Routes {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    pendingImport: Uri? = null,
+    onImportConsumed: () -> Unit = {}
+) {
     val nav = rememberNavController()
+
+    LaunchedEffect(pendingImport) {
+        if (pendingImport != null) {
+            nav.navigate(Routes.LIST) {
+                launchSingleTop = true
+            }
+        }
+    }
+
     NavHost(navController = nav, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
             HomeScreen(onOpenList = { nav.navigate(Routes.LIST) })
@@ -27,7 +41,9 @@ fun AppNavigation() {
         composable(Routes.LIST) {
             TrackListScreen(
                 onBack = { nav.popBackStack() },
-                onOpenTrack = { id -> nav.navigate(Routes.detail(id)) }
+                onOpenTrack = { id -> nav.navigate(Routes.detail(id)) },
+                pendingImport = pendingImport,
+                onImportConsumed = onImportConsumed
             )
         }
         composable(

@@ -1,5 +1,6 @@
 package com.mpg99.gpstracker.ui.list
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -50,6 +51,8 @@ import androidx.compose.runtime.getValue
 fun TrackListScreen(
     onBack: () -> Unit,
     onOpenTrack: (Long) -> Unit,
+    pendingImport: Uri? = null,
+    onImportConsumed: () -> Unit = {},
     vm: TrackListViewModel = viewModel(factory = TrackListViewModel.Factory)
 ) {
     val context = LocalContext.current
@@ -72,6 +75,13 @@ fun TrackListScreen(
                 is ImportResult.Error -> event.message
             }
             snackbarHostState.showSnackbar(msg)
+        }
+    }
+
+    LaunchedEffect(pendingImport) {
+        if (pendingImport != null) {
+            vm.importFromGpx(pendingImport)
+            onImportConsumed()
         }
     }
 
