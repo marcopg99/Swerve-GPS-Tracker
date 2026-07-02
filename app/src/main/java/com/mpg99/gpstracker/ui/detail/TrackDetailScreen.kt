@@ -1,6 +1,9 @@
 package com.mpg99.gpstracker.ui.detail
 
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Start
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.SmallFloatingActionButton
@@ -70,6 +74,10 @@ fun TrackDetailScreen(
     val lineColor = MaterialTheme.colorScheme.primary.toArgb()
     var showRenameDialog by remember { mutableStateOf(false) }
 
+    val coverPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri -> if (uri != null) vm.setCover(uri) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -80,6 +88,21 @@ fun TrackDetailScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            coverPickerLauncher.launch(
+                                PickVisualMediaRequest(
+                                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                                )
+                            )
+                        },
+                        enabled = track != null
+                    ) {
+                        Icon(
+                            Icons.Default.AddPhotoAlternate,
+                            contentDescription = "Carátula"
+                        )
+                    }
                     IconButton(
                         onClick = { showRenameDialog = true },
                         enabled = track != null
@@ -143,7 +166,7 @@ fun TrackDetailScreen(
                 if (points.size >= 2) {
                     val line = Polyline().apply {
                         outlinePaint.color = lineColor
-                        outlinePaint.strokeWidth = 8f
+                        outlinePaint.strokeWidth = 16f
                         setPoints(points.map { GeoPoint(it.latitude, it.longitude) })
                     }
                     mapView.overlays.add(line)

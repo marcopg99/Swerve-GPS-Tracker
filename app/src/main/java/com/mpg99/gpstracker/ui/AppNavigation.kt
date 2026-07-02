@@ -11,9 +11,11 @@ import androidx.navigation.navArgument
 import com.mpg99.gpstracker.ui.detail.TrackDetailScreen
 import com.mpg99.gpstracker.ui.home.HomeScreen
 import com.mpg99.gpstracker.ui.list.TrackListScreen
+import com.mpg99.gpstracker.ui.record.RecordScreen
 
 object Routes {
     const val HOME = "home"
+    const val RECORD = "record"
     const val LIST = "list"
     const val DETAIL = "detail/{trackId}"
     fun detail(trackId: Long) = "detail/$trackId"
@@ -36,7 +38,14 @@ fun AppNavigation(
 
     NavHost(navController = nav, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
-            HomeScreen(onOpenList = { nav.navigate(Routes.LIST) })
+            HomeScreen(
+                onNewRoute = { nav.navigate(Routes.RECORD) },
+                onOpenList = { nav.navigate(Routes.LIST) },
+                onOpenTrack = { id -> nav.navigate(Routes.detail(id)) }
+            )
+        }
+        composable(Routes.RECORD) {
+            RecordScreen(onBack = { nav.popBackStack() })
         }
         composable(Routes.LIST) {
             TrackListScreen(

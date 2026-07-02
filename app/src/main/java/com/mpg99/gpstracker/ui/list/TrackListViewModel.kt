@@ -14,6 +14,7 @@ import com.mpg99.gpstracker.data.TrackRepository
 import com.mpg99.gpstracker.data.TrackSummary
 import com.mpg99.gpstracker.gpx.GpxExporter
 import com.mpg99.gpstracker.gpx.GpxImporter
+import com.mpg99.gpstracker.util.CoverStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -38,7 +39,11 @@ class TrackListViewModel(
     val importEvents: Flow<ImportResult> = _importEvents.receiveAsFlow()
 
     fun deleteTrack(id: Long) {
-        viewModelScope.launch { repo.deleteTrack(id) }
+        viewModelScope.launch {
+            val cover = repo.getTrack(id)?.coverUri
+            repo.deleteTrack(id)
+            CoverStore.deleteCover(cover)
+        }
     }
 
     suspend fun exportToGpx(trackId: Long): File? = withContext(Dispatchers.IO) {

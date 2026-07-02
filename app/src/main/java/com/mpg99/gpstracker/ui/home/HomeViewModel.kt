@@ -7,22 +7,17 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import com.mpg99.gpstracker.GPSTrackerApp
 import com.mpg99.gpstracker.data.TrackRepository
+import com.mpg99.gpstracker.data.TrackSummary
 import com.mpg99.gpstracker.service.TrackingService
-import com.mpg99.gpstracker.service.TrackingState
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 class HomeViewModel(private val repo: TrackRepository) : ViewModel() {
 
-    val trackingState: Flow<TrackingState> = TrackingService.state
+    /** Most recently started track (summaries are ordered by startTime DESC), or null if none. */
+    val lastTrack: Flow<TrackSummary?> = repo.observeTracks().map { it.firstOrNull() }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val livePointCount: Flow<Int> = TrackingService.state.flatMapLatest { st ->
-        if (st.isTracking && st.trackId > 0) repo.observePointCount(st.trackId)
-        else flowOf(0)
-    }
+    val isTracking: Flow<Boolean> = TrackingService.state.map { it.isTracking }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

@@ -73,6 +73,8 @@ dependencies {
 
     implementation(libs.osmdroid.android)
 
+    implementation(libs.coil.compose)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

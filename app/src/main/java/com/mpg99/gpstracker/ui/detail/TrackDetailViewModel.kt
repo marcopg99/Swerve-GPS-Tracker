@@ -12,6 +12,7 @@ import com.mpg99.gpstracker.data.Track
 import com.mpg99.gpstracker.data.TrackPoint
 import com.mpg99.gpstracker.data.TrackRepository
 import com.mpg99.gpstracker.gpx.GpxExporter
+import com.mpg99.gpstracker.util.CoverStore
 import com.mpg99.gpstracker.util.haversineMeters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -55,6 +56,31 @@ class TrackDetailViewModel(
         val track = repo.getTrack(trackId) ?: return@withContext null
         val points = repo.getPoints(trackId)
         GpxExporter.writeGpx(getApplication(), track, points)
+    }
+
+    /** Copies the picked image into internal storage and links it as this track's cover. */
+    fun setCover(uri: android.net.Uri) {
+        viewModelScope.launch {
+            val previous = _state.value.track?.coverUri
+            val path = withContext(Dispatchers.IO) {
+                CoverStore.saveCover(getApplication(), trackId, uri, previous)
+            } ?: return@launch
+            repo.setCover(trackId, path)
+            _state.value = _state.value.copy(
+                track = _state.value.track?.copy(coverUri = path)
+            )
+        }
+    }
+
+    fun removeCover() {
+        viewModelScope.launch {
+            val previous = _state.value.track?.coverUri ?: return@launch
+            repo.setCover(trackId, null)
+            withContext(Dispatchers.IO) { CoverStore.deleteCover(previous) }
+            _state.value = _state.value.copy(
+                track = _state.value.track?.copy(coverUri = null)
+            )
+        }
     }
 
     fun renameTrack(newName: String) {

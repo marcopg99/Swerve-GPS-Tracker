@@ -1,122 +1,77 @@
 package com.mpg99.gpstracker.ui.home
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mpg99.gpstracker.R
-import com.mpg99.gpstracker.service.TrackingService
-import com.mpg99.gpstracker.service.TrackingState
+import com.mpg99.gpstracker.data.TrackSummary
+import com.mpg99.gpstracker.ui.components.TrackCover
+import com.mpg99.gpstracker.util.formatDateTime
+import com.mpg99.gpstracker.util.formatDistance
 import com.mpg99.gpstracker.util.formatDuration
+
+private val ButtonShape = RoundedCornerShape(16.dp)
+private val ButtonHeight = 160.dp
+private val SummaryCardColor = Color(0xFF1B4521)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    onNewRoute: () -> Unit,
     onOpenList: () -> Unit,
+    onOpenTrack: (Long) -> Unit,
     vm: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
 ) {
-    val context = LocalContext.current
-    val state by vm.trackingState.collectAsStateWithLifecycle(initialValue = TrackingState())
-    val pointCount by vm.livePointCount.collectAsStateWithLifecycle(initialValue = 0)
-
-    var hasFineLocation by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context, Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        )
-    }
-    var hasNotifications by remember {
-        mutableStateOf(
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                ContextCompat.checkSelfPermission(
-                    context, Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED
-        )
-    }
-    var hasBackground by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context, Manifest.permission.ACCESS_BACKGROUND_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        )
-    }
-
-    val foregroundPermsLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { result ->
-        hasFineLocation = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            ContextCompat.checkSelfPermission(
-                context, Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        hasNotifications = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            result[Manifest.permission.POST_NOTIFICATIONS] == true ||
-            ContextCompat.checkSelfPermission(
-                context, Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-    }
-    val backgroundPermLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted -> hasBackground = granted }
-
-    var elapsedMs by remember { mutableStateOf(0L) }
-    LaunchedEffect(state.isTracking, state.startedAt) {
-        if (state.isTracking && state.startedAt > 0) {
-            while (true) {
-                elapsedMs = System.currentTimeMillis() - state.startedAt
-                kotlinx.coroutines.delay(1000)
-            }
-        } else {
-            elapsedMs = 0L
-        }
-    }
+    val lastTrack by vm.lastTrack.collectAsStateWithLifecycle(initialValue = null)
+    val isTracking by vm.isTracking.collectAsStateWithLifecycle(initialValue = false)
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
-                actions = {
-                    TextButton(onClick = onOpenList) {
-                        Icon(Icons.Default.List, contentDescription = "Lista")
-                        Text(" Rutas")
-                    }
+                navigationIcon = {
+                    Image(
+                        painter = painterResource(R.drawable.ic_launcher_image),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .padding(start = 12.dp, end = 12.dp)
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
                 }
             )
         }
@@ -126,94 +81,106 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            Text(
+                "Última ruta",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            val track = lastTrack
+            if (track != null) {
+                LastTrackCard(track = track, onClick = { onOpenTrack(track.id) })
+            } else {
+                Card(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = if (state.isTracking) "Grabando…" else "En espera",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = formatDuration(elapsedMs),
-                        style = MaterialTheme.typography.displayMedium
-                    )
-                    Text(
-                        text = "$pointCount puntos",
-                        style = MaterialTheme.typography.bodyLarge
+                        "Aún no has grabado ninguna ruta.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(20.dp)
                     )
                 }
             }
 
-            if (!hasFineLocation || !hasNotifications) {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            "Se necesita permiso de ubicación y de notificaciones para grabar.",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Button(
-                            onClick = {
-                                val perms = mutableListOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    perms += Manifest.permission.POST_NOTIFICATIONS
-                                }
-                                foregroundPermsLauncher.launch(perms.toTypedArray())
-                            },
-                            modifier = Modifier.padding(top = 8.dp)
-                        ) { Text("Conceder permisos") }
-                    }
-                }
-            } else if (!hasBackground) {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            "Para grabar mientras la pantalla está apagada, concede el permiso de ubicación en segundo plano.",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Button(
-                            onClick = {
-                                backgroundPermLauncher.launch(
-                                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                                )
-                            },
-                            modifier = Modifier.padding(top = 8.dp)
-                        ) { Text("Permitir en segundo plano") }
-                    }
-                }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                BigButton(
+                    icon = if (isTracking) Icons.Default.FiberManualRecord else Icons.Default.Add,
+                    label = if (isTracking) "Grabando" else "Nueva ruta",
+                    onClick = onNewRoute,
+                    modifier = Modifier.weight(1f)
+                )
+                BigButton(
+                    icon = Icons.AutoMirrored.Filled.List,
+                    label = "Rutas",
+                    onClick = onOpenList,
+                    modifier = Modifier.weight(1f)
+                )
             }
+        }
+    }
+}
 
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                if (state.isTracking) {
-                    Button(
-                        onClick = { TrackingService.stop(context) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
-                        ),
-                        modifier = Modifier.size(width = 200.dp, height = 64.dp)
-                    ) {
-                        Icon(Icons.Default.Stop, contentDescription = null)
-                        Text("  Detener", style = MaterialTheme.typography.titleMedium)
-                    }
-                } else {
-                    Button(
-                        onClick = { TrackingService.start(context) },
-                        enabled = hasFineLocation && hasNotifications,
-                        modifier = Modifier.size(width = 200.dp, height = 64.dp)
-                    ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null)
-                        Text("  Iniciar", style = MaterialTheme.typography.titleMedium)
-                    }
-                }
-            }
+@Composable
+private fun BigButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        shape = ButtonShape,
+        modifier = modifier.height(ButtonHeight)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp)
+            )
+            Text(label, style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+@Composable
+private fun LastTrackCard(
+    track: TrackSummary,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = SummaryCardColor)
+    ) {
+        TrackCover(
+            coverPath = track.coverUri,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+        )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(track.name, style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Inicio: ${formatDateTime(track.startTime)}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            val durationMs = (track.endTime ?: track.startTime) - track.startTime
+            Text(
+                "Duración: ${formatDuration(durationMs)}  ·  ${formatDistance(track.distanceMeters)}" +
+                    if (track.endTime == null) "  ·  en curso" else "",
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

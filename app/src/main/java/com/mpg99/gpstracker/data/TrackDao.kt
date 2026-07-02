@@ -12,6 +12,8 @@ data class TrackSummary(
     val name: String,
     val startTime: Long,
     val endTime: Long?,
+    val coverUri: String?,
+    val distanceMeters: Double,
     val pointCount: Int
 )
 
@@ -30,8 +32,12 @@ interface TrackDao {
     @Query("SELECT * FROM tracks WHERE id = :id")
     suspend fun getTrack(id: Long): Track?
 
+    @Query("SELECT * FROM tracks WHERE distanceMeters = 0")
+    suspend fun tracksWithoutDistance(): List<Track>
+
     @Query("""
         SELECT t.id AS id, t.name AS name, t.startTime AS startTime, t.endTime AS endTime,
+               t.coverUri AS coverUri, t.distanceMeters AS distanceMeters,
                COUNT(p.id) AS pointCount
         FROM tracks t
         LEFT JOIN track_points p ON p.trackId = t.id
@@ -39,6 +45,12 @@ interface TrackDao {
         ORDER BY t.startTime DESC
     """)
     fun observeTrackSummaries(): Flow<List<TrackSummary>>
+
+    @Query("UPDATE tracks SET coverUri = :coverUri WHERE id = :id")
+    suspend fun setCover(id: Long, coverUri: String?)
+
+    @Query("UPDATE tracks SET distanceMeters = :meters WHERE id = :id")
+    suspend fun updateDistance(id: Long, meters: Double)
 
     @Query("UPDATE tracks SET name = :name WHERE id = :id")
     suspend fun renameTrack(id: Long, name: String)

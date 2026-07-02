@@ -24,6 +24,7 @@ import com.mpg99.gpstracker.MainActivity
 import com.mpg99.gpstracker.R
 import com.mpg99.gpstracker.data.TrackPoint
 import com.mpg99.gpstracker.util.formatDateTime
+import com.mpg99.gpstracker.util.haversineMeters
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -43,6 +44,11 @@ class TrackingService : Service() {
     private var insertJob: Job? = null
     private var currentTrackId: Long = -1L
 
+    // Running distance state, maintained on the location callback thread (single-threaded looper).
+    private var lastLat: Double? = null
+    private var lastLon: Double? = null
+    private var runningDistance: Double = 0.0
+
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             val app = applicationContext as GPSTrackerApp
@@ -60,8 +66,19 @@ class TrackingService : Service() {
                     timestamp = if (loc.time > 0) loc.time else now
                 )
             }
+            result.locations.forEach { loc ->
+                val pLat = lastLat
+                val pLon = lastLon
+                if (pLat != null && pLon != null) {
+                    runningDistance += haversineMeters(pLat, pLon, loc.latitude, loc.longitude)
+                }
+                lastLat = loc.latitude
+                lastLon = loc.longitude
+            }
+            val distance = runningDistance
             scope.launch {
                 points.forEach { app.repository.addPoint(it) }
+                app.repository.setDistance(trackId, distance)
             }
         }
     }
@@ -92,6 +109,10 @@ class TrackingService : Service() {
         }
         startForegroundCompat()
 
+        lastLat = null
+        lastLon = null
+        runningDistance = 0.0
+
         val app = applicationContext as GPSTrackerApp
         scope.launch {
             val now = System.currentTimeMillis()
@@ -121,6 +142,9 @@ class TrackingService : Service() {
         val app = applicationContext as GPSTrackerApp
         val finishedId = currentTrackId
         currentTrackId = -1L
+        lastLat = null
+        lastLon = null
+        runningDistance = 0.0
         _state.value = TrackingState()
         if (finishedId > 0) {
             scope.launch {
