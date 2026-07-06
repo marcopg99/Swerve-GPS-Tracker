@@ -1,6 +1,13 @@
 package com.mpg99.gpstracker.ui.detail
 
+import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -72,6 +79,7 @@ fun TrackDetailScreen(
     val track = state.track
     val points = state.points
     val lineColor = MaterialTheme.colorScheme.primary.toArgb()
+    val outlineColor = MaterialTheme.colorScheme.onPrimary.toArgb()
     var showRenameDialog by remember { mutableStateOf(false) }
 
     val coverPickerLauncher = rememberLauncherForActivityResult(
@@ -164,12 +172,29 @@ fun TrackDetailScreen(
             DisposableEffect(points, lineColor) {
                 mapView.overlays.removeAll { it is Polyline || it is Marker }
                 if (points.size >= 2) {
+                    val geoPoints = points.map { GeoPoint(it.latitude, it.longitude) }
+
+                    // 1. Línea de borde (más ancha, debajo)
+                    val borderLine = Polyline().apply {
+                        outlinePaint.color = outlineColor // o el color de borde que quieras
+                        outlinePaint.strokeWidth = 24f    // más ancha que la línea principal
+                        outlinePaint.strokeCap = Paint.Cap.ROUND
+                        outlinePaint.strokeJoin = Paint.Join.ROUND
+                        setPoints(geoPoints)
+                    }
+
+                    // 2. Línea principal (más estrecha, encima)
                     val line = Polyline().apply {
                         outlinePaint.color = lineColor
-                        outlinePaint.strokeWidth = 16f
-                        setPoints(points.map { GeoPoint(it.latitude, it.longitude) })
+                        outlinePaint.strokeWidth = 18f
+                        outlinePaint.strokeCap = Paint.Cap.ROUND
+                        outlinePaint.strokeJoin = Paint.Join.ROUND
+                        setPoints(geoPoints)
                     }
-                    mapView.overlays.add(line)
+
+                    mapView.overlays.add(borderLine) // primero el borde
+                    mapView.overlays.add(line)       // luego el trazo principal, encima
+
                     val box = BoundingBox.fromGeoPointsSafe(line.actualPoints)
                     mapView.post { mapView.zoomToBoundingBox(box, true, 80) }
                 } else if (points.size == 1) {
@@ -181,7 +206,7 @@ fun TrackDetailScreen(
                     mapView.overlays.add(
                         Marker(mapView).apply {
                             position = GeoPoint(start.latitude, start.longitude)
-                            icon = ContextCompat.getDrawable(context, R.drawable.ic_marker_start)
+                            icon = markerIcon(context, R.drawable.ic_marker_start)
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                             title = "Inicio"
                         }
@@ -191,8 +216,8 @@ fun TrackDetailScreen(
                         mapView.overlays.add(
                             Marker(mapView).apply {
                                 position = GeoPoint(end.latitude, end.longitude)
-                                icon = ContextCompat.getDrawable(context, R.drawable.ic_marker_end)
-                                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                icon = markerIcon(context, R.drawable.ic_marker_end)
+                                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                                 title = "Final"
                             }
                         )
@@ -291,6 +316,20 @@ private fun RenameTrackDialog(
             TextButton(onClick = onDismiss) { Text("Cancelar") }
         }
     )
+}
+
+/**
+ * Rasterizes a (vector) drawable to a [BitmapDrawable] so osmdroid renders it reliably as a
+ * [Marker] icon — VectorDrawables with `<group>`/`<clip-path>` may otherwise draw blank.
+ */
+private fun markerIcon(context: Context, resId: Int): Drawable? {
+    val drawable = ContextCompat.getDrawable(context, resId) ?: return null
+    val width = drawable.intrinsicWidth.takeIf { it > 0 } ?: 1
+    val height = drawable.intrinsicHeight.takeIf { it > 0 } ?: 1
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    drawable.setBounds(0, 0, width, height)
+    drawable.draw(Canvas(bitmap))
+    return BitmapDrawable(context.resources, bitmap)
 }
 
 @Composable

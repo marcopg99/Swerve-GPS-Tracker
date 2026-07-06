@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
@@ -35,7 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,6 +44,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mpg99.gpstracker.service.TrackingService
 import com.mpg99.gpstracker.service.TrackingState
+import com.mpg99.gpstracker.ui.theme.StopButtonColor
+import com.mpg99.gpstracker.ui.theme.SummaryCardColor
 import com.mpg99.gpstracker.util.formatDuration
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -130,7 +132,7 @@ fun RecordScreen(
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B4521))
+                colors = CardDefaults.cardColors(containerColor = SummaryCardColor)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
@@ -153,7 +155,12 @@ fun RecordScreen(
             }
 
             if (!hasFineLocation || !hasNotifications) {
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             "Se necesita permiso de ubicación y de notificaciones para grabar.",
@@ -170,12 +177,22 @@ fun RecordScreen(
                                 }
                                 foregroundPermsLauncher.launch(perms.toTypedArray())
                             },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ),
                             modifier = Modifier.padding(top = 8.dp)
                         ) { Text("Conceder permisos") }
                     }
                 }
             } else if (!hasBackground) {
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             "Para grabar mientras la pantalla está apagada, concede el permiso de ubicación en segundo plano.",
@@ -187,6 +204,11 @@ fun RecordScreen(
                                     Manifest.permission.ACCESS_BACKGROUND_LOCATION
                                 )
                             },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ),
                             modifier = Modifier.padding(top = 8.dp)
                         ) { Text("Permitir en segundo plano") }
                     }
@@ -197,8 +219,10 @@ fun RecordScreen(
                 if (state.isTracking) {
                     Button(
                         onClick = { TrackingService.stop(context) },
+                        shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
+                            containerColor = StopButtonColor,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         ),
                         modifier = Modifier.size(width = 200.dp, height = 64.dp)
                     ) {
@@ -209,6 +233,11 @@ fun RecordScreen(
                     Button(
                         onClick = { TrackingService.start(context) },
                         enabled = hasFineLocation && hasNotifications,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
                         modifier = Modifier.size(width = 200.dp, height = 64.dp)
                     ) {
                         Icon(Icons.Default.PlayArrow, contentDescription = null)

@@ -7,10 +7,10 @@ import androidx.compose.ui.graphics.Color
 
 // Dark palette built around several greens.
 private val DarkGreenColors = darkColorScheme(
-    primary = Color(0xFF7FD98B),
-    onPrimary = Color(0xFF00390F),
-    primaryContainer = Color(0xFF1F5B2A),
-    onPrimaryContainer = Color(0xFF9BF6A6),
+    primary = Color(0xFF31CB00),
+    onPrimary = Color(0xFF0F1D0F),
+    primaryContainer = Color(0xFF1E441E),
+    onPrimaryContainer = Color(0xFFFFFFFF),
 
     secondary = Color(0xFF9CD3A0),
     onSecondary = Color(0xFF08381A),
@@ -22,18 +22,24 @@ private val DarkGreenColors = darkColorScheme(
     tertiaryContainer = Color(0xFF105040),
     onTertiaryContainer = Color(0xFF8CF0CC),
 
-    background = Color(0xFF0E140F),
-    onBackground = Color(0xFFDFE4DC),
-    surface = Color(0xFF0E140F),
-    onSurface = Color(0xFFDFE4DC),
-    surfaceVariant = Color(0xFF3B4A3D),
-    onSurfaceVariant = Color(0xFFBFCBBE),
-    surfaceContainer = Color(0xFF19211A),
-    surfaceContainerHigh = Color(0xFF232C24),
+    background = Color(0xFF0F110F),
+    onBackground = Color(0xFFFFFFFF),
+    surface = Color(0xFF0F110F),
+    onSurface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFF1D211D),
+    onSurfaceVariant = Color(0xFFFFFFFF),
+    surfaceContainer = Color(0xFFff00ff),
+    surfaceContainerHigh = Color(0xFF0F110F),
 
-    outline = Color(0xFF8A9889),
-    outlineVariant = Color(0xFF3B4A3D),
+    outline = Color(0xFFffffff),
+    outlineVariant = Color(0xFFDADADA),
 )
+
+/** Background color for the summary/track cards shown across the app. */
+val SummaryCardColor = Color(0xFF1E441E)
+
+/** Background color for the "Detener" (stop recording) button. */
+val StopButtonColor = Color(0xFFae2012)
 
 @Composable
 fun GPSTrackerTheme(

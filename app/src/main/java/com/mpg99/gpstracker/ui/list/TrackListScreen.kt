@@ -38,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,6 +45,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mpg99.gpstracker.data.TrackSummary
 import com.mpg99.gpstracker.gpx.GpxExporter
 import com.mpg99.gpstracker.ui.components.TrackCover
+import com.mpg99.gpstracker.ui.theme.SummaryCardColor
 import com.mpg99.gpstracker.util.formatDateTime
 import com.mpg99.gpstracker.util.formatDistance
 import com.mpg99.gpstracker.util.formatDuration
@@ -169,7 +169,7 @@ private fun TrackRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B4521))
+        colors = CardDefaults.cardColors(containerColor = SummaryCardColor)
     ) {
         TrackCover(
             coverPath = item.coverUri,

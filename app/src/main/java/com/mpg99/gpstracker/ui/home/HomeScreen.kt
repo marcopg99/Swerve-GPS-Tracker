@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,7 +31,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -40,13 +40,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mpg99.gpstracker.R
 import com.mpg99.gpstracker.data.TrackSummary
 import com.mpg99.gpstracker.ui.components.TrackCover
+import com.mpg99.gpstracker.ui.theme.SummaryCardColor
 import com.mpg99.gpstracker.util.formatDateTime
 import com.mpg99.gpstracker.util.formatDistance
 import com.mpg99.gpstracker.util.formatDuration
 
 private val ButtonShape = RoundedCornerShape(16.dp)
 private val ButtonHeight = 160.dp
-private val SummaryCardColor = Color(0xFF1B4521)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +65,7 @@ fun HomeScreen(
                 title = { Text(stringResource(R.string.app_name)) },
                 navigationIcon = {
                     Image(
-                        painter = painterResource(R.drawable.ic_launcher_image),
+                        painter = painterResource(R.drawable.logo),
                         contentDescription = null,
                         modifier = Modifier
                             .padding(start = 12.dp, end = 12.dp)
@@ -135,6 +135,10 @@ private fun BigButton(
     Button(
         onClick = onClick,
         shape = ButtonShape,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ),
         modifier = modifier.height(ButtonHeight)
     ) {
         Column(
