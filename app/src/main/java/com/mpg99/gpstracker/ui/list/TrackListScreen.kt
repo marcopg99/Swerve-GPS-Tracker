@@ -8,12 +8,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -40,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -213,14 +217,17 @@ private fun TrackRow(
             Row(
                 modifier = Modifier
                     .weight(1f)
+                    .height(IntrinsicSize.Min)
                     .clip(RoundedCornerShape(16.dp))
                     .clickable(onClick = onClick),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Cover stretches to the row height, which the two-line title keeps constant.
                 TrackCover(
                     track = item,
                     modifier = Modifier
-                        .size(88.dp)
+                        .width(88.dp)
+                        .fillMaxHeight()
                         .clip(RoundedCornerShape(16.dp))
                 )
                 Column(
@@ -229,11 +236,14 @@ private fun TrackRow(
                         .align(Alignment.CenterVertically),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
+                    // Always two lines tall (minLines = maxLines) so every row has the same height.
                     Text(
                         item.name,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 1
+                        minLines = 2,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         formatDateShort(item.startTime),
