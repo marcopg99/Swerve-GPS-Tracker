@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Share
@@ -82,6 +83,7 @@ private val SheetOverlap = 28.dp
 fun TrackDetailScreen(
     trackId: Long,
     onBack: () -> Unit,
+    onTrim: () -> Unit,
     vm: TrackDetailViewModel = viewModel(factory = TrackDetailViewModel.factory(trackId))
 ) {
     val context = LocalContext.current
@@ -195,15 +197,23 @@ fun TrackDetailScreen(
                 FloatingCircleButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                 }
-                FloatingCircleButton(
-                    enabled = track != null,
-                    onClick = {
-                        coverPickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Only a finished track can be trimmed (a live one is still gaining points).
+                    if (track?.endTime != null && points.size >= 3) {
+                        FloatingCircleButton(onClick = onTrim) {
+                            Icon(Icons.Default.ContentCut, contentDescription = "Recortar ruta")
+                        }
                     }
-                ) {
-                    Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Carátula")
+                    FloatingCircleButton(
+                        enabled = track != null,
+                        onClick = {
+                            coverPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }
+                    ) {
+                        Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Carátula")
+                    }
                 }
             }
 
@@ -333,7 +343,7 @@ fun TrackDetailScreen(
 
 /** Round, translucent button that stays legible over any map tile. */
 @Composable
-private fun FloatingCircleButton(
+internal fun FloatingCircleButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
     content: @Composable () -> Unit
@@ -383,7 +393,7 @@ private fun RenameTrackDialog(
  * Rasterizes a (vector) drawable to a [BitmapDrawable] so osmdroid renders it reliably as a
  * [Marker] icon — VectorDrawables with `<group>`/`<clip-path>` may otherwise draw blank.
  */
-private fun markerIcon(context: Context, resId: Int): Drawable? {
+internal fun markerIcon(context: Context, resId: Int): Drawable? {
     val drawable = ContextCompat.getDrawable(context, resId) ?: return null
     val width = drawable.intrinsicWidth.takeIf { it > 0 } ?: 1
     val height = drawable.intrinsicHeight.takeIf { it > 0 } ?: 1
@@ -394,7 +404,7 @@ private fun markerIcon(context: Context, resId: Int): Drawable? {
 }
 
 @Composable
-private fun rememberMapView(): MapView {
+internal fun rememberMapView(): MapView {
     val context = LocalContext.current
     val mapView = remember {
         MapView(context).apply {

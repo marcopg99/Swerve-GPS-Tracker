@@ -13,13 +13,16 @@ import com.mpg99.gpstracker.ui.detail.TrackDetailScreen
 import com.mpg99.gpstracker.ui.home.HomeScreen
 import com.mpg99.gpstracker.ui.list.TrackListScreen
 import com.mpg99.gpstracker.ui.record.RecordScreen
+import com.mpg99.gpstracker.ui.trim.TrimScreen
 
 object Routes {
     const val HOME = "home"
     const val RECORD = "record"
     const val LIST = "list"
     const val DETAIL = "detail/{trackId}"
+    const val TRIM = "trim/{trackId}"
     fun detail(trackId: Long) = "detail/$trackId"
+    fun trim(trackId: Long) = "trim/$trackId"
 }
 
 @Composable
@@ -77,7 +80,18 @@ fun AppNavigation(
             arguments = listOf(navArgument("trackId") { type = NavType.LongType })
         ) { backStack ->
             val trackId = backStack.arguments?.getLong("trackId") ?: -1L
-            TrackDetailScreen(trackId = trackId, onBack = { nav.popBackStack() })
+            TrackDetailScreen(
+                trackId = trackId,
+                onBack = { nav.popBackStack() },
+                onTrim = { nav.navigate(Routes.trim(trackId)) }
+            )
+        }
+        composable(
+            route = Routes.TRIM,
+            arguments = listOf(navArgument("trackId") { type = NavType.LongType })
+        ) { backStack ->
+            val trackId = backStack.arguments?.getLong("trackId") ?: -1L
+            TrimScreen(trackId = trackId, onBack = { nav.popBackStack() })
         }
     }
 }

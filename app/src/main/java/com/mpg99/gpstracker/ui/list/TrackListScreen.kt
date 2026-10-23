@@ -8,14 +8,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,7 +23,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,7 +38,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -211,31 +215,26 @@ private fun TrackRow(
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .clickable(onClick = onClick)
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
+            // Fixed size, not IntrinsicSize.Min: the intrinsic height under-counted the two-line
+            // title and squeezed the chips at the bottom until their text was clipped away.
+            TrackCover(
+                track = item,
                 modifier = Modifier
-                    .weight(1f)
-                    .height(IntrinsicSize.Min)
+                    .size(width = 88.dp, height = 108.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .clickable(onClick = onClick),
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                // Cover stretches to the row height, which the two-line title keeps constant.
-                TrackCover(
-                    track = item,
-                    modifier = Modifier
-                        .width(88.dp)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(16.dp))
-                )
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .align(Alignment.CenterVertically),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
+                // The menu sits beside the title so the chips below keep the full width.
+                Row(verticalAlignment = Alignment.Top) {
                     // Always two lines tall (minLines = maxLines) so every row has the same height.
                     Text(
                         item.name,
@@ -243,41 +242,64 @@ private fun TrackRow(
                         fontWeight = FontWeight.SemiBold,
                         minLines = 2,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
-                    Text(
-                        formatDateShort(item.startTime),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
-                        StatChip(formatDistance(item.distanceMeters))
-                        StatChip(
-                            if (item.endTime == null) "en curso"
-                            else formatDuration(item.endTime - item.startTime)
-                        )
-                    }
+                    TrackMenu(onShare = onShare, onDelete = onDelete)
                 }
-            }
-            Column(verticalArrangement = Arrangement.SpaceBetween) {
-                IconButton(onClick = onShare) {
-                    Icon(
-                        Icons.Default.Share,
-                        contentDescription = "Compartir GPX",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Borrar",
-                        tint = DangerColor
+                Text(
+                    formatDateShort(item.startTime),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    StatChip(formatDistance(item.distanceMeters))
+                    StatChip(
+                        if (item.endTime == null) "en curso"
+                        else formatDuration(item.endTime - item.startTime)
                     )
                 }
             }
+        }
+    }
+}
+
+/** Hamburger button with the per-route actions; add new options here as they appear. */
+@Composable
+private fun TrackMenu(onShare: () -> Unit, onDelete: () -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }, modifier = Modifier.size(28.dp)) {
+            Icon(
+                Icons.Default.Menu,
+                contentDescription = "Opciones de la ruta",
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text("Compartir GPX") },
+                leadingIcon = {
+                    Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                },
+                onClick = {
+                    expanded = false
+                    onShare()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Borrar", color = DangerColor) },
+                leadingIcon = {
+                    Icon(Icons.Default.Delete, contentDescription = null, tint = DangerColor)
+                },
+                onClick = {
+                    expanded = false
+                    onDelete()
+                }
+            )
         }
     }
 }

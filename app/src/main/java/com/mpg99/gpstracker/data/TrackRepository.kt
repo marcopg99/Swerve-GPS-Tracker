@@ -65,6 +65,17 @@ class TrackRepository(private val dao: TrackDao) {
 
     suspend fun deleteTrack(id: Long) = dao.deleteTrack(id)
 
+    /**
+     * Keeps only the points between [fromIndex] and [toIndex] (inclusive, 0-based over the
+     * time-ordered points); the rest are deleted for good. Start/end time and distance follow.
+     */
+    suspend fun trimTrack(trackId: Long, fromIndex: Int, toIndex: Int) {
+        val points = dao.getPoints(trackId)
+        if (fromIndex < 0 || toIndex >= points.size || fromIndex >= toIndex) return
+        val kept = points.subList(fromIndex, toIndex + 1)
+        dao.trim(trackId, kept.first().timestamp, kept.last().timestamp, totalDistanceMeters(kept))
+    }
+
     suspend fun importTrack(
         name: String,
         startTime: Long,

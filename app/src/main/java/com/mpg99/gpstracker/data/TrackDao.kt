@@ -79,6 +79,18 @@ interface TrackDao {
     @Query("SELECT COUNT(*) FROM track_points WHERE trackId = :trackId")
     fun observePointCount(trackId: Long): Flow<Int>
 
+    @Query("DELETE FROM track_points WHERE trackId = :trackId AND (timestamp < :from OR timestamp > :to)")
+    suspend fun deletePointsOutside(trackId: Long, from: Long, to: Long)
+
+    @Query("UPDATE tracks SET startTime = :startTime, endTime = :endTime, distanceMeters = :meters WHERE id = :id")
+    suspend fun updateBounds(id: Long, startTime: Long, endTime: Long, meters: Double)
+
+    @Transaction
+    suspend fun trim(trackId: Long, from: Long, to: Long, meters: Double) {
+        deletePointsOutside(trackId, from, to)
+        updateBounds(trackId, from, to, meters)
+    }
+
     @Transaction
     suspend fun insertTrackWithPoints(track: Track, points: (Long) -> List<TrackPoint>): Long {
         val id = insertTrack(track)

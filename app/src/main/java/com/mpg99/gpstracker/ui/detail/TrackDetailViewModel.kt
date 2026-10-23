@@ -45,6 +45,8 @@ class TrackDetailViewModel(
         viewModelScope.launch {
             repo.observePoints(trackId).collect { pts ->
                 _state.value = _state.value.copy(
+                    // Refreshed too: trimming changes start/end time while this screen is kept.
+                    track = repo.getTrack(trackId) ?: _state.value.track,
                     points = pts,
                     distanceMeters = computeDistance(pts)
                 )

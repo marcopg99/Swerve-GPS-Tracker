@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /** Small pill for a single fact ("12.60 km", "1:24:05"). */
@@ -28,6 +29,10 @@ fun StatChip(text: String, modifier: Modifier = Modifier) {
             text = text,
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurface,
+            // A squeezed chip must never wrap into an empty-looking pill.
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
         )
     }
