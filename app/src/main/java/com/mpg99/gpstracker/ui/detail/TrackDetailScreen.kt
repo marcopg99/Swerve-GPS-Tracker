@@ -72,6 +72,7 @@ import kotlinx.coroutines.launch
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
@@ -415,6 +416,8 @@ internal fun rememberMapView(): MapView {
             clipToOutline = true
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
+            // Pinch-to-zoom is enough; hide osmdroid's on-map +/- buttons.
+            zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
             controller.setZoom(4.0)
         }
     }
