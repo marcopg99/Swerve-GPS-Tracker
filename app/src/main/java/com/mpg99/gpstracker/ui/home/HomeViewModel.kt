@@ -8,18 +8,33 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import com.mpg99.gpstracker.GPSTrackerApp
 import com.mpg99.gpstracker.data.TrackRepository
 import com.mpg99.gpstracker.data.TrackSummary
-import com.mpg99.gpstracker.service.TrackingService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+data class HomeUiState(
+    /** Most recently started track, or null if none. */
+    val last: TrackSummary? = null,
+    /** The tracks right after [last], shown under "Recientes". */
+    val recent: List<TrackSummary> = emptyList(),
+    val totalMeters: Double = 0.0,
+    val trackCount: Int = 0
+)
+
 class HomeViewModel(private val repo: TrackRepository) : ViewModel() {
 
-    /** Most recently started track (summaries are ordered by startTime DESC), or null if none. */
-    val lastTrack: Flow<TrackSummary?> = repo.observeTracks().map { it.firstOrNull() }
-
-    val isTracking: Flow<Boolean> = TrackingService.state.map { it.isTracking }
+    /** Summaries are ordered by startTime DESC, so the first one is the latest. */
+    val uiState: Flow<HomeUiState> = repo.observeTracks().map { tracks ->
+        HomeUiState(
+            last = tracks.firstOrNull(),
+            recent = tracks.drop(1).take(RECENT_COUNT),
+            totalMeters = tracks.sumOf { it.distanceMeters },
+            trackCount = tracks.size
+        )
+    }
 
     companion object {
+        private const val RECENT_COUNT = 2
+
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as GPSTrackerApp

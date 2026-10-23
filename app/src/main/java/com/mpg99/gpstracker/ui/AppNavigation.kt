@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.mpg99.gpstracker.ui.components.NavTab
 import com.mpg99.gpstracker.ui.detail.TrackDetailScreen
 import com.mpg99.gpstracker.ui.home.HomeScreen
 import com.mpg99.gpstracker.ui.list.TrackListScreen
@@ -31,6 +32,23 @@ fun AppNavigation(
     LaunchedEffect(pendingImport) {
         if (pendingImport != null) {
             nav.navigate(Routes.LIST) {
+                popUpTo(Routes.HOME)
+                launchSingleTop = true
+            }
+        }
+    }
+
+    // Bottom-bar tabs are top-level destinations: they never stack on top of each other, so
+    // back from Rutas/Grabar always returns to Inicio.
+    val onNavigate: (NavTab) -> Unit = { tab ->
+        when (tab) {
+            NavTab.HOME -> nav.popBackStack(Routes.HOME, inclusive = false)
+            NavTab.RECORD -> nav.navigate(Routes.RECORD) {
+                popUpTo(Routes.HOME)
+                launchSingleTop = true
+            }
+            NavTab.LIST -> nav.navigate(Routes.LIST) {
+                popUpTo(Routes.HOME)
                 launchSingleTop = true
             }
         }
@@ -39,17 +57,16 @@ fun AppNavigation(
     NavHost(navController = nav, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
             HomeScreen(
-                onNewRoute = { nav.navigate(Routes.RECORD) },
-                onOpenList = { nav.navigate(Routes.LIST) },
+                onNavigate = onNavigate,
                 onOpenTrack = { id -> nav.navigate(Routes.detail(id)) }
             )
         }
         composable(Routes.RECORD) {
-            RecordScreen(onBack = { nav.popBackStack() })
+            RecordScreen(onNavigate = onNavigate)
         }
         composable(Routes.LIST) {
             TrackListScreen(
-                onBack = { nav.popBackStack() },
+                onNavigate = onNavigate,
                 onOpenTrack = { id -> nav.navigate(Routes.detail(id)) },
                 pendingImport = pendingImport,
                 onImportConsumed = onImportConsumed

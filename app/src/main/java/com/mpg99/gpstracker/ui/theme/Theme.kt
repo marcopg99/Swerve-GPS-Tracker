@@ -5,45 +5,64 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Dark palette built around several greens.
-private val DarkGreenColors = darkColorScheme(
-    primary = Color(0xFF31CB00),
-    onPrimary = Color(0xFF0F1D0F),
-    primaryContainer = Color(0xFF1E441E),
-    onPrimaryContainer = Color(0xFFFFFFFF),
+/** Single accent: an emerald green, used for primary actions and route lines. */
+val AccentGreen = Color(0xFF2FBF71)
 
-    secondary = Color(0xFF9CD3A0),
-    onSecondary = Color(0xFF08381A),
-    secondaryContainer = Color(0xFF34513B),
-    onSecondaryContainer = Color(0xFFB8EFBC),
+private val Ink = Color(0xFF0D120F)
+private val Snow = Color(0xFFF2F5EE)
+private val Mist = Color(0xFF9BA89F)
 
-    tertiary = Color(0xFF6FD4B0),
-    onTertiary = Color(0xFF00382A),
-    tertiaryContainer = Color(0xFF105040),
-    onTertiaryContainer = Color(0xFF8CF0CC),
+// Dark palette: near-black green ground, two surface steps, one emerald accent.
+private val DarkColors = darkColorScheme(
+    primary = AccentGreen,
+    onPrimary = Ink,
+    primaryContainer = Color(0xFF1D2620),
+    onPrimaryContainer = Snow,
 
-    background = Color(0xFF0F110F),
-    onBackground = Color(0xFFFFFFFF),
-    surface = Color(0xFF0F110F),
-    onSurface = Color(0xFFFFFFFF),
-    surfaceVariant = Color(0xFF1D211D),
-    onSurfaceVariant = Color(0xFFFFFFFF),
-    surfaceContainer = Color(0xFFff00ff),
-    surfaceContainerHigh = Color(0xFF0F110F),
+    secondary = Mist,
+    onSecondary = Ink,
+    secondaryContainer = Color(0xFF1D2620),
+    onSecondaryContainer = Snow,
 
-    outline = Color(0xFFffffff),
-    outlineVariant = Color(0xFFDADADA),
+    tertiary = AccentGreen,
+    onTertiary = Ink,
+
+    background = Ink,
+    onBackground = Snow,
+    surface = Ink,
+    onSurface = Snow,
+    surfaceVariant = Color(0xFF1D2620),
+    onSurfaceVariant = Mist,
+    surfaceContainerLow = Color(0xFF151C17),
+    surfaceContainer = Color(0xFF151C17),
+    surfaceContainerHigh = Color(0xFF1D2620),
+    surfaceContainerHighest = Color(0xFF1D2620),
+
+    outline = Color(0xFF2A3630),
+    outlineVariant = Color(0xFF222D26),
+
+    error = Color(0xFFFF9C82),
+    onError = Ink,
 )
 
 /** Background color for the summary/track cards shown across the app. */
-val SummaryCardColor = Color(0xFF1E441E)
+val SummaryCardColor = Color(0xFF151C17)
 
-/** Background color for the "Detener" (stop recording) button. */
-val StopButtonColor = Color(0xFFae2012)
+/** Flat background behind a route shape or map placeholder (covers without an image). */
+val RouteBackdropColor = Color(0xFF101712)
+
+/** Coral used for the "Detener" (stop recording) button and the active record tab. */
+val StopButtonColor = Color(0xFFFF7A59)
+
+/** Content color on top of [StopButtonColor]. */
+val OnStopButtonColor = Color(0xFF1A0E0A)
+
+/** Soft red for destructive actions on dark surfaces. */
+val DangerColor = Color(0xFFFF9C82)
 
 @Composable
 fun GPSTrackerTheme(
     content: @Composable () -> Unit
 ) {
-    MaterialTheme(colorScheme = DarkGreenColors, content = content)
+    MaterialTheme(colorScheme = DarkColors, content = content)
 }

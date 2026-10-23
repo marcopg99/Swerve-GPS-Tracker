@@ -23,9 +23,24 @@ fun formatDuration(ms: Long): String {
     return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%02d:%02d".format(m, s)
 }
 
+/** Splits a distance into its number and unit, e.g. `"12.60" to "km"` or `"850" to "m"`. */
+fun distanceParts(meters: Double): Pair<String, String> =
+    if (meters >= 1000) "%.2f".format(meters / 1000.0) to "km"
+    else "%.0f".format(meters) to "m"
+
 fun formatDistance(meters: Double): String =
-    if (meters >= 1000) "%.2f km".format(meters / 1000.0)
-    else "%.0f m".format(meters)
+    distanceParts(meters).let { (value, unit) -> "$value $unit" }
+
+/** Always `HH:MM:SS`, for the live recording clock. */
+fun formatClock(ms: Long): String {
+    val totalSeconds = ms / 1000
+    return "%02d:%02d:%02d".format(totalSeconds / 3600, (totalSeconds % 3600) / 60, totalSeconds % 60)
+}
+
+private val shortDateFormat = SimpleDateFormat("EEE d MMM · HH:mm", Locale.getDefault())
+
+/** Compact date for cards and rows, e.g. `sáb 18 oct · 08:15`. */
+fun formatDateShort(epochMs: Long): String = shortDateFormat.format(Date(epochMs))
 
 private const val EARTH_RADIUS_M = 6_371_000.0
 

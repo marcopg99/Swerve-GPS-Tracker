@@ -3,59 +3,61 @@ package com.mpg99.gpstracker.ui.list
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mpg99.gpstracker.data.TrackSummary
 import com.mpg99.gpstracker.gpx.GpxExporter
+import com.mpg99.gpstracker.ui.components.AppBottomBar
+import com.mpg99.gpstracker.ui.components.NavTab
+import com.mpg99.gpstracker.ui.components.StatChip
 import com.mpg99.gpstracker.ui.components.TrackCover
-import com.mpg99.gpstracker.ui.theme.SummaryCardColor
-import com.mpg99.gpstracker.util.formatDateTime
+import com.mpg99.gpstracker.ui.theme.DangerColor
+import com.mpg99.gpstracker.util.formatDateShort
 import com.mpg99.gpstracker.util.formatDistance
 import com.mpg99.gpstracker.util.formatDuration
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.getValue
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrackListScreen(
-    onBack: () -> Unit,
+    onNavigate: (NavTab) -> Unit,
     onOpenTrack: (Long) -> Unit,
     pendingImport: Uri? = null,
     onImportConsumed: () -> Unit = {},
@@ -92,67 +94,100 @@ fun TrackListScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Rutas guardadas") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        importLauncher.launch(
-                            arrayOf(
-                                "application/gpx+xml",
-                                "application/xml",
-                                "text/xml",
-                                "application/octet-stream",
-                                "*/*"
-                            )
-                        )
-                    }) {
-                        Icon(Icons.Default.FileUpload, contentDescription = "Importar GPX")
-                    }
-                }
-            )
-        },
+        bottomBar = { AppBottomBar(selected = NavTab.LIST, onSelect = onNavigate) },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        if (list.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Aún no has grabado ninguna ruta")
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 12.dp)
-            ) {
-                items(list, key = { it.id }) { item ->
-                    TrackRow(
-                        item = item,
-                        onClick = { onOpenTrack(item.id) },
-                        onShare = {
-                            scope.launch {
-                                val file = vm.exportToGpx(item.id) ?: return@launch
-                                val intent = GpxExporter.shareIntent(context, file)
-                                context.startActivity(
-                                    android.content.Intent.createChooser(intent, "Compartir GPX")
-                                )
-                            }
-                        },
-                        onDelete = { vm.deleteTrack(item.id) }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            Header(
+                trackCount = list.size,
+                totalMeters = list.sumOf { it.distanceMeters },
+                onImport = {
+                    importLauncher.launch(
+                        arrayOf(
+                            "application/gpx+xml",
+                            "application/xml",
+                            "text/xml",
+                            "application/octet-stream",
+                            "*/*"
+                        )
                     )
                 }
+            )
+
+            if (list.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Aún no has grabado ninguna ruta",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
+                ) {
+                    items(list, key = { it.id }) { item ->
+                        TrackRow(
+                            item = item,
+                            onClick = { onOpenTrack(item.id) },
+                            onShare = {
+                                scope.launch {
+                                    val file = vm.exportToGpx(item.id) ?: return@launch
+                                    val intent = GpxExporter.shareIntent(context, file)
+                                    context.startActivity(
+                                        android.content.Intent.createChooser(intent, "Compartir GPX")
+                                    )
+                                }
+                            },
+                            onDelete = { vm.deleteTrack(item.id) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Header(
+    trackCount: Int,
+    totalMeters: Double,
+    onImport: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 20.dp, top = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Bottom
+    ) {
+        Column {
+            Text(
+                "Rutas",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "$trackCount ${if (trackCount == 1) "ruta" else "rutas"} · ${formatDistance(totalMeters)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            IconButton(onClick = onImport) {
+                Icon(Icons.Default.FileUpload, contentDescription = "Importar GPX")
             }
         }
     }
@@ -165,38 +200,72 @@ private fun TrackRow(
     onShare: () -> Unit,
     onDelete: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = SummaryCardColor)
+    Surface(
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        TrackCover(
-            coverPath = item.coverUri,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-        )
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(item.name, style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "Inicio: ${formatDateTime(item.startTime)}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            val durationMs = (item.endTime ?: item.startTime) - item.startTime
-            Text(
-                "Duración: ${formatDuration(durationMs)}  ·  ${formatDistance(item.distanceMeters)}" +
-                    if (item.endTime == null) "  ·  en curso" else "",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable(onClick = onClick),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                TrackCover(
+                    track = item,
+                    modifier = Modifier
+                        .size(88.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .align(Alignment.CenterVertically),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        item.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
+                    )
+                    Text(
+                        formatDateShort(item.startTime),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        StatChip(formatDistance(item.distanceMeters))
+                        StatChip(
+                            if (item.endTime == null) "en curso"
+                            else formatDuration(item.endTime - item.startTime)
+                        )
+                    }
+                }
+            }
+            Column(verticalArrangement = Arrangement.SpaceBetween) {
                 IconButton(onClick = onShare) {
-                    Icon(Icons.Default.Share, contentDescription = "Compartir GPX")
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = "Compartir GPX",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Borrar")
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Borrar",
+                        tint = DangerColor
+                    )
                 }
             }
         }

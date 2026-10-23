@@ -17,6 +17,12 @@ data class TrackSummary(
     val pointCount: Int
 )
 
+/** Bare coordinate pair, used to draw route shapes without loading full [TrackPoint] rows. */
+data class LatLon(
+    val latitude: Double,
+    val longitude: Double
+)
+
 @Dao
 interface TrackDao {
 
@@ -63,6 +69,9 @@ interface TrackDao {
 
     @Query("SELECT * FROM track_points WHERE trackId = :trackId ORDER BY timestamp ASC")
     suspend fun getPoints(trackId: Long): List<TrackPoint>
+
+    @Query("SELECT latitude, longitude FROM track_points WHERE trackId = :trackId ORDER BY timestamp ASC")
+    suspend fun getPointCoords(trackId: Long): List<LatLon>
 
     @Query("SELECT * FROM track_points WHERE trackId = :trackId ORDER BY timestamp ASC")
     fun observePoints(trackId: Long): Flow<List<TrackPoint>>

@@ -1,11 +1,26 @@
 package com.mpg99.gpstracker.data
 
+import com.mpg99.gpstracker.util.downsample
 import com.mpg99.gpstracker.util.haversineMeters
 import kotlinx.coroutines.flow.Flow
+import java.util.concurrent.ConcurrentHashMap
 
 class TrackRepository(private val dao: TrackDao) {
 
+    /** Thinned route shapes keyed by "trackId:pointCount", so a changed track is recomputed. */
+    private val previewCache = ConcurrentHashMap<String, List<LatLon>>()
+
     fun observeTracks(): Flow<List<TrackSummary>> = dao.observeTrackSummaries()
+
+    /** A small, thinned list of coordinates describing the shape of a track (for thumbnails). */
+    suspend fun routePreview(trackId: Long, pointCount: Int): List<LatLon> {
+        val key = "$trackId:$pointCount"
+        previewCache[key]?.let { return it }
+        val preview = downsample(dao.getPointCoords(trackId), PREVIEW_MAX_POINTS)
+        previewCache.keys.removeAll { it.startsWith("$trackId:") }
+        previewCache[key] = preview
+        return preview
+    }
 
     fun observePoints(trackId: Long): Flow<List<TrackPoint>> = dao.observePoints(trackId)
 
@@ -63,6 +78,10 @@ class TrackRepository(private val dao: TrackDao) {
             distanceMeters = totalDistanceMeters(points)
         )
     ) { trackId -> points.map { it.copy(trackId = trackId) } }
+
+    private companion object {
+        const val PREVIEW_MAX_POINTS = 80
+    }
 
     private fun totalDistanceMeters(points: List<TrackPoint>): Double {
         if (points.size < 2) return 0.0
